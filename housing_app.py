@@ -57,6 +57,6 @@ try:
     load_regr = joblib.load("housing_regr.pkl")
     pred = load_regr.predict(input_data)
     st.subheader("Results")
-    st.write("Prediction price (EUR/m2) for 2021 Q2: ***${:d}***".format(int(pred)))
+    st.write("Prediction price (EUR/m2) for 2021 Q2: ***{:d}€***".format(int(pred)))
 except:
     st.stop()
