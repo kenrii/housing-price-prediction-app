@@ -2,6 +2,7 @@ import json
 import streamlit as st
 import pandas as pd
 import numpy as np
+import pgeocode
 from nearest_postal_code_algo import find_nearest_postal_code
 
 
@@ -21,6 +22,7 @@ Input your values and test now!
 """
 )
 
+nomi = pgeocode.Nominatim("fi")
 
 def get_predictions(postal_code, housing_type):
     # Encode categorical values to one hot encoding and postal code to geolocational data (latitude, longitude)
@@ -56,17 +58,28 @@ def user_input_features():
 
 def st_disclaimer_nearest_postal_code(found_nearest_postal_code=False, nearest_postal_code=None, postal_code=None):
     if found_nearest_postal_code:
-        st.write("We didn't find a model for ***{}***. Therefore, we predict with the model which is nearest to this postal code: ***{}***".format(postal_code, nearest_postal_code))
+        st.write("We didn't find a model for ***{}***. Therefore, we predict with the model which is nearest to this postal code: ***{}***.".format(postal_code, nearest_postal_code))
+
+def check_validity_of_postal_code(postal_code):
+    geolocation = nomi.query_postal_code([postal_code])
+    latitude, longitude = (
+        geolocation["latitude"].iloc[0],
+        geolocation["longitude"].iloc[0],
+    )
+    if pd.isnull(latitude) or pd.isnull(longitude):
+        st.error("Please input a valid Finnish postal code.")
+        return False
+    return True
 
 
 if __name__ == "__main__":
     try:
         postal_code, housing_type = user_input_features()
-        if postal_code and housing_type:
+        if check_validity_of_postal_code(postal_code):
             pred = get_predictions(postal_code, housing_type)
             st.subheader("Results")
             st.write("Prediction price (EUR/m2) for 2021 Q2:")
-            st.markdown("### {:d}€ ###".format(int(pred)))
+            st.markdown("#### {:d}€ ####".format(int(pred)))
 
     except:
         st.stop()
