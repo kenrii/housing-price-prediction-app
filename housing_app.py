@@ -1,10 +1,10 @@
 import json
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 import pgeocode
 from nearest_postal_code_algo import find_nearest_postal_code
-
 
 st.write(
     """
@@ -24,15 +24,15 @@ Input your values and test now!
 
 nomi = pgeocode.Nominatim("fi")
 
-def get_predictions(postal_code, housing_type):
+def get_predictions_df(postal_code, housing_type):
     # Encode categorical values to one hot encoding and postal code to geolocational data (latitude, longitude)
     housing_type_json = get_json_for_housing_type(housing_type)
-    if postal_code in housing_type_json["pred"]:
-        return housing_type_json["pred"][postal_code]
+    if postal_code in housing_type_json["pred_0"]:
+        return json_to_dataframe(housing_type_json, postal_code)
     else:
         nearest_postal_code = find_nearest_postal_code(postal_code, housing_type_json)
         st_disclaimer_nearest_postal_code(True, nearest_postal_code, postal_code)
-        return housing_type_json["pred"][nearest_postal_code]
+        return json_to_dataframe(housing_type_json, nearest_postal_code)
 
 
 def get_json_for_housing_type(housing_type):
@@ -47,6 +47,13 @@ def get_json_for_housing_type(housing_type):
     with open(json_file_path, "r") as j:
         contents = json.loads(j.read())
     return contents
+
+def json_to_dataframe(json_file, postal_code):
+    future_dates = ["2021-07-01", "2021-10-01", "2022-01-01", "2022-04-01"]
+    predictions = [json_file["pred_" + str(index)][postal_code] for index in range(4)]
+    df = pd.DataFrame({"date": future_dates, "price": predictions})
+    df["date"] = pd.to_datetime(df["date"])
+    return df
 
 
 def user_input_features():
@@ -71,15 +78,20 @@ def check_validity_of_postal_code(postal_code):
         return False
     return True
 
+def display_results_in_table(df):
+    quarters_dict = {"2021-07-01": "Q3 2021", "2021-10-01": "Q4 2021", "2022-01-01": "Q1 2022", "2022-04-01": "Q2 2022"}
+    for index, row in df.iterrows():
+        st.write("{}: **{}€**".format(quarters_dict[str(row["date"]).split()[0]], int(row["price"])))
 
 if __name__ == "__main__":
-    try:
-        postal_code, housing_type = user_input_features()
-        if check_validity_of_postal_code(postal_code):
-            pred = get_predictions(postal_code, housing_type)
-            st.subheader("Results")
-            st.write("Prediction price (EUR/m2) for 2021 Q2:")
-            st.markdown("#### {:d}€ ####".format(int(pred)))
+    postal_code, housing_type = user_input_features()
+    if check_validity_of_postal_code(postal_code):
+        st.subheader("Results")
+        st.write(f"Prediction price (EUR/m2) for **{postal_code}** and **{housing_type}** for the next four quarters:\n")
+        df = get_predictions_df(postal_code, housing_type)
+        display_results_in_table(df)
+        st.subheader("Price development")
+        fig = df.plot(y="price", x="date").get_figure()
+        st.pyplot(fig)
+    st.stop()
 
-    except:
-        st.stop()
