@@ -16,9 +16,8 @@ Investors can now predict housing price movement in Finland using artificial int
 The aim of the tool is to work as a complement to traditional real estate investing which mainly relies on local knowledge and human-driven research.
 Application uses big data based on historic data with machine-learning algorithms to forecast the future trend of property prices so you will be one step ahead in your investment decision.
 
-Input your values and test now!
+**Input your values and predict next four quarters!**
 
-**Disclaimer: At the moment application predicts 2021 Q3 prices.**
 """
 )
 
