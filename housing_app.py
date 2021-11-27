@@ -23,6 +23,7 @@ Application uses big data based on historic data with machine-learning algorithm
 
 nomi = pgeocode.Nominatim("fi")
 
+
 def get_predictions_df(postal_code, housing_type):
     # Encode categorical values to one hot encoding and postal code to geolocational data (latitude, longitude)
     housing_type_json = get_json_for_housing_type(housing_type)
@@ -47,6 +48,7 @@ def get_json_for_housing_type(housing_type):
         contents = json.loads(j.read())
     return contents
 
+
 def json_to_dataframe(json_file, postal_code):
     future_dates = ["2021-07-01", "2021-10-01", "2022-01-01", "2022-04-01"]
     predictions = [json_file["pred_" + str(index)][postal_code] for index in range(4)]
@@ -58,13 +60,22 @@ def json_to_dataframe(json_file, postal_code):
 def user_input_features():
     # Streamlit interface's inputs to array for predictions
     postal_code = st.text_input("Postal code")
-    housing_type = st.selectbox("Housing type", ("one-room", "two-room", "three or more room", "terrace house"))
+    housing_type = st.selectbox(
+        "Housing type", ("one-room", "two-room", "three or more room", "terrace house")
+    )
     return postal_code, housing_type
 
 
-def st_disclaimer_nearest_postal_code(found_nearest_postal_code=False, nearest_postal_code=None, postal_code=None):
+def st_disclaimer_nearest_postal_code(
+    found_nearest_postal_code=False, nearest_postal_code=None, postal_code=None
+):
     if found_nearest_postal_code:
-        st.write("We didn't find a model for ***{}***. Therefore, we predict with the model which is nearest to this postal code: ***{}***.".format(postal_code, nearest_postal_code))
+        st.write(
+            "We didn't find a model for ***{}***. Therefore, we predict with the model which is nearest to this postal code: ***{}***.".format(
+                postal_code, nearest_postal_code
+            )
+        )
+
 
 def check_validity_of_postal_code(postal_code):
     geolocation = nomi.query_postal_code([postal_code])
@@ -77,20 +88,34 @@ def check_validity_of_postal_code(postal_code):
         return False
     return True
 
+
 def display_results_in_table(df):
-    quarters_dict = {"2021-07-01": "Q3 2021", "2021-10-01": "Q4 2021", "2022-01-01": "Q1 2022", "2022-04-01": "Q2 2022"}
+    quarters_dict = {
+        "2021-07-01": "Q3 2021",
+        "2021-10-01": "Q4 2021",
+        "2022-01-01": "Q1 2022",
+        "2022-04-01": "Q2 2022",
+    }
     for index, row in df.iterrows():
-        st.write("{}: **{}€**".format(quarters_dict[str(row["date"]).split()[0]], int(row["price"])))
+        st.write(
+            "{}: **{}€**".format(
+                quarters_dict[str(row["date"]).split()[0]], int(row["price"])
+            )
+        )
+
 
 if __name__ == "__main__":
-    postal_code, housing_type = user_input_features()
-    if check_validity_of_postal_code(postal_code):
-        st.subheader("Results")
-        st.write(f"Prediction price (EUR/m2) for **{postal_code}** and **{housing_type}** for the next four quarters:\n")
-        df = get_predictions_df(postal_code, housing_type)
-        display_results_in_table(df)
-        st.subheader("Price development")
-        fig = df.plot(y="price", x="date").get_figure()
-        st.pyplot(fig)
-    st.stop()
-
+    try:
+        postal_code, housing_type = user_input_features()
+        if check_validity_of_postal_code(postal_code):
+            st.subheader("Results")
+            st.write(
+                f"Prediction price (EUR/m2) for **{postal_code}** and **{housing_type}** for the next four quarters:\n"
+            )
+            df = get_predictions_df(postal_code, housing_type)
+            display_results_in_table(df)
+            st.subheader("Price development")
+            fig = df.plot(y="price", x="date").get_figure()
+            st.pyplot(fig)
+    except:
+        st.stop()
