@@ -11,7 +11,7 @@ def find_nearest_postal_code(postal_code, json):
     nearest_postal_code = "00100"
     min_distance = np.float("inf")
     for pc in json_latitude.keys():
-        distance = _min_euclidean_distance(latitude, longitude, json_latitude[pc], json_longitude[pc])
+        distance = _min_euclidean_distance(latitude, longitude, float(json_latitude[pc]), float(json_longitude[pc]))
         if distance < min_distance:
             min_distance = distance
             nearest_postal_code = pc

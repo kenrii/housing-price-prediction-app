@@ -37,10 +37,10 @@ def get_predictions_df(postal_code, housing_type):
 
 def get_json_for_housing_type(housing_type):
     json_dict = {
-        "one-room": "one_room_predictions-Prophet.json",
-        "two-room": "two_room_predictions-Prophet.json",
-        "three or more room": "three_room_predictions-Prophet.json",
-        "terrace house": "terraced_houses_predictions-Prophet.json",
+        "one-room": "emsembled_own/one_room_ensembled_forecast.json",
+        "two-room": "emsembled_own/two_room_ensembled_forecast.json",
+        "three or more room": "emsembled_own/three-more_room_ensembled_forecast.json",
+        "terrace house": "emsembled_own/terrace_house_ensembled_forecast.json",
     }
     json_file_path = "json_prediction/{}".format(json_dict[housing_type])
 
@@ -51,7 +51,7 @@ def get_json_for_housing_type(housing_type):
 
 def json_to_dataframe(json_file, postal_code):
     future_dates = ["2021-07-01", "2021-10-01", "2022-01-01", "2022-04-01"]
-    predictions = [json_file["pred_" + str(index)][postal_code] for index in range(4)]
+    predictions = [float(json_file["pred_" + str(index)][postal_code]) for index in range(4)]
     df = pd.DataFrame({"date": future_dates, "price": predictions})
     df["date"] = pd.to_datetime(df["date"])
     return df
@@ -98,15 +98,15 @@ def display_results_in_table(df):
     }
     for index, row in df.iterrows():
         st.write(
-            "{}: **{}€**".format(
-                quarters_dict[str(row["date"]).split()[0]], int(row["price"])
+            "{}: **{:.2f}€**".format(
+                quarters_dict[str(row["date"]).split()[0]], row["price"]
             )
         )
 
 
 if __name__ == "__main__":
+    postal_code, housing_type = user_input_features()
     try:
-        postal_code, housing_type = user_input_features()
         if check_validity_of_postal_code(postal_code):
             st.subheader("Results")
             st.write(
