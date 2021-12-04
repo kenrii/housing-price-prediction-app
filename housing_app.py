@@ -27,21 +27,52 @@ nomi = pgeocode.Nominatim("fi")
 def get_predictions_df(postal_code, housing_type):
     # Encode categorical values to one hot encoding and postal code to geolocational data (latitude, longitude)
     housing_type_json = get_json_for_housing_type(housing_type)
+    housing_type_json_clustered = get_json_for_housing_type(housing_type, types="clustered")
+    cluster_label, found_label = get_cluster_label(housing_type, postal_code)
     if postal_code in housing_type_json["pred_0"]:
+        print("Found own model")
         return json_to_dataframe(housing_type_json, postal_code)
+    elif found_label:
+        return json_to_dataframe(housing_type_json_clustered, postal_code, types="clustered", label=cluster_label)
     else:
         nearest_postal_code = find_nearest_postal_code(postal_code, housing_type_json)
         st_disclaimer_nearest_postal_code(True, nearest_postal_code, postal_code)
         return json_to_dataframe(housing_type_json, nearest_postal_code)
 
 
-def get_json_for_housing_type(housing_type):
-    json_dict = {
-        "one-room": "emsembled_own/one_room_ensembled_forecast.json",
-        "two-room": "emsembled_own/two_room_ensembled_forecast.json",
-        "three or more room": "emsembled_own/three-more_room_ensembled_forecast.json",
-        "terrace house": "emsembled_own/terrace_house_ensembled_forecast.json",
-    }
+def get_cluster_label(housing_type, postal_code):
+    csv_dict = {
+            "one-room": "cluster_labels/one_room_cluster_dictionary.csv",
+            "two-room": "cluster_labels/two_room_cluster_dictionary.csv",
+            "three or more room": "cluster_labels/two_room_cluster_dictionary.csv",
+            "terrace house": "cluster_labels/two_room_cluster_dictionary.csv",
+        }
+    csv_file_path = "json_prediction/{}".format(csv_dict[housing_type])
+    df = pd.read_csv(csv_file_path, dtype=str)
+    if postal_code in list(df["Postal code"].values):
+        print("Found label")
+        label = df["label6"].values[df["Postal code"] == postal_code][0]
+        return str(label), True
+    else:
+        print("Didn't find label")
+        return None, False
+
+
+def get_json_for_housing_type(housing_type, types="own"):
+    if types == "own":
+        json_dict = {
+            "one-room": "emsembled_own/one_room_ensembled_forecast.json",
+            "two-room": "emsembled_own/two_room_ensembled_forecast.json",
+            "three or more room": "emsembled_own/three-more_room_ensembled_forecast.json",
+            "terrace house": "emsembled_own/terrace_house_ensembled_forecast.json",
+        }
+    else:
+        json_dict = {
+            "one-room": "emsembled_clusters/one_room_ensemble_cluster_forecasts.json",
+            "two-room": "emsembled_clusters/two_room_ensemble_cluster_forecasts.json",
+            "three or more room": "emsembled_clusters/three-more_room_ensemble_cluster_forecasts.json",
+            "terrace house": "emsembled_clusters/three-more_room_ensemble_cluster_forecasts.json",
+        }
     json_file_path = "json_prediction/{}".format(json_dict[housing_type])
 
     with open(json_file_path, "r") as j:
@@ -49,11 +80,12 @@ def get_json_for_housing_type(housing_type):
     return contents
 
 
-def json_to_dataframe(json_file, postal_code):
+def json_to_dataframe(json_file, postal_code, types="own", label=None):
     future_dates = ["2021-07-01", "2021-10-01", "2022-01-01", "2022-04-01"]
-    predictions = [
-        float(json_file["pred_" + str(index)][postal_code]) for index in range(4)
-    ]
+    if types == "own":
+        predictions = [float(json_file["pred_" + str(index)][postal_code]) for index in range(4)]
+    else:
+        predictions = [float(json_file["pred_" + str(index)][label]) for index in range(4)]
     df = pd.DataFrame({"date": future_dates, "price": predictions})
     df["date"] = pd.to_datetime(df["date"])
     return df
@@ -108,16 +140,14 @@ def display_results_in_table(df):
 
 if __name__ == "__main__":
     postal_code, housing_type = user_input_features()
-    try:
-        if check_validity_of_postal_code(postal_code):
-            st.subheader("Results")
-            st.write(
-                f"Prediction price (EUR/m2) for **{postal_code}** and **{housing_type}** for the next four quarters:\n"
-            )
-            df = get_predictions_df(postal_code, housing_type)
-            display_results_in_table(df)
-            st.subheader("Price development")
-            fig = df.plot(y="price", x="date").get_figure()
-            st.pyplot(fig)
-    except:
-        st.stop()
+    if check_validity_of_postal_code(postal_code):
+        st.subheader("Results")
+        st.write(
+            f"Prediction price (EUR/m2) for **{postal_code}** and **{housing_type}** for the next four quarters:\n"
+        )
+        df = get_predictions_df(postal_code, housing_type)
+        display_results_in_table(df)
+        st.subheader("Price development")
+        fig = df.plot(y="price", x="date").get_figure()
+        st.pyplot(fig)
+        #st.stop()
