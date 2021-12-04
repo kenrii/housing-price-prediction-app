@@ -44,8 +44,8 @@ def get_cluster_label(housing_type, postal_code):
     csv_dict = {
             "one-room": "cluster_labels/one_room_cluster_dictionary.csv",
             "two-room": "cluster_labels/two_room_cluster_dictionary.csv",
-            "three or more room": "cluster_labels/two_room_cluster_dictionary.csv",
-            "terrace house": "cluster_labels/two_room_cluster_dictionary.csv",
+            "three or more room": "cluster_labels/three-more_room_cluster_dictionary.csv",
+            "terrace house": "cluster_labels/three-more_room_cluster_dictionary.csv",
         }
     csv_file_path = "json_prediction/{}".format(csv_dict[housing_type])
     df = pd.read_csv(csv_file_path, dtype=str)
