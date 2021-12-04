@@ -51,7 +51,9 @@ def get_json_for_housing_type(housing_type):
 
 def json_to_dataframe(json_file, postal_code):
     future_dates = ["2021-07-01", "2021-10-01", "2022-01-01", "2022-04-01"]
-    predictions = [float(json_file["pred_" + str(index)][postal_code]) for index in range(4)]
+    predictions = [
+        float(json_file["pred_" + str(index)][postal_code]) for index in range(4)
+    ]
     df = pd.DataFrame({"date": future_dates, "price": predictions})
     df["date"] = pd.to_datetime(df["date"])
     return df
