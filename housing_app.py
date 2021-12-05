@@ -30,7 +30,6 @@ def get_predictions_df(postal_code, housing_type):
     housing_type_json_clustered = get_json_for_housing_type(housing_type, types="clustered")
     cluster_label, found_label = get_cluster_label(housing_type, postal_code)
     if postal_code in housing_type_json["pred_0"]:
-        print("Found own model")
         return json_to_dataframe(housing_type_json, postal_code)
     elif found_label:
         return json_to_dataframe(housing_type_json_clustered, postal_code, types="clustered", label=cluster_label)
@@ -45,16 +44,17 @@ def get_cluster_label(housing_type, postal_code):
             "one-room": "cluster_labels/one_room_cluster_dictionary.csv",
             "two-room": "cluster_labels/two_room_cluster_dictionary.csv",
             "three or more room": "cluster_labels/three-more_room_cluster_dictionary.csv",
-            "terrace house": "cluster_labels/three-more_room_cluster_dictionary.csv",
+            "terrace house": "cluster_labels/terrace_house_cluster_dictionary.csv",
         }
     csv_file_path = "json_prediction/{}".format(csv_dict[housing_type])
     df = pd.read_csv(csv_file_path, dtype=str)
     if postal_code in list(df["Postal code"].values):
-        print("Found label")
-        label = df["label6"].values[df["Postal code"] == postal_code][0]
+        try:
+            label = df["label6"].values[df["Postal code"] == postal_code][0]
+        except KeyError:
+            label = df["label8"].values[df["Postal code"] == postal_code][0]
         return str(label), True
     else:
-        print("Didn't find label")
         return None, False
 
 
@@ -71,7 +71,7 @@ def get_json_for_housing_type(housing_type, types="own"):
             "one-room": "emsembled_clusters/one_room_ensemble_cluster_forecasts.json",
             "two-room": "emsembled_clusters/two_room_ensemble_cluster_forecasts.json",
             "three or more room": "emsembled_clusters/three-more_room_ensemble_cluster_forecasts.json",
-            "terrace house": "emsembled_clusters/three-more_room_ensemble_cluster_forecasts.json",
+            "terrace house": "emsembled_clusters/terrace_house_ensemble_cluster_forecasts.json",
         }
     json_file_path = "json_prediction/{}".format(json_dict[housing_type])
 
